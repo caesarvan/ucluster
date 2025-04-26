@@ -290,43 +290,38 @@ function Flow() {
       devicesByType[type].push(node);
     });
     
-    // 设置每种类型的起始坐标和间距
-    const typeConfig: Record<string, { startX: number, startY: number, spacing: number, rowSpacing: number }> = {
-      'DavidV100': { startX: 100, startY: 100, spacing: 300, rowSpacing: 250 },    // NPU
-      'Hi1650V100': { startX: 100, startY: 400, spacing: 300, rowSpacing: 250 },   // CPU
-      'UnionsV100': { startX: 100, startY: 700, spacing: 300, rowSpacing: 220 },   // Switch
-      'unknown': { startX: 100, startY: 1000, spacing: 300, rowSpacing: 220 }
+    // 基础配置
+    const baseConfig = {
+      spacing: 300,      // 水平间距
+      rowSpacing: 250,   // 垂直间距
+      startX: 100,       // 起始X坐标
+      maxNodesPerRow: 8  // 每行最多设备数
     };
-    
-    // 对于其他类型的设备，动态添加配置
-    Object.keys(devicesByType).forEach(type => {
-      if (!typeConfig[type]) {
-        const typesCount = Object.keys(typeConfig).length;
-        typeConfig[type] = {
-          startX: 100,
-          startY: 1200 + (typesCount - 4) * 220, // 4是预设的类型数量
-          spacing: 300,
-          rowSpacing: 220
-        };
-      }
-    });
     
     // 创建一个新的节点列表，保持节点ID不变
     const updatedNodes: Node[] = [];
     
-    // 布局每种类型的设备 - 每行最多8个设备
+    // 当前Y坐标位置，随着布局进行动态更新
+    let currentY = 100;  // 起始Y坐标
+    
+    // 按类型逐个布局设备，确保不同类型之间不重叠
     Object.entries(devicesByType).forEach(([type, typeNodes]) => {
-      const config = typeConfig[type];
-      const maxNodesPerRow = 8; // 修改为每行最多8个设备
+      if (typeNodes.length === 0) return; // 跳过没有节点的类型
       
+      console.log(`正在布局 ${type} 类型，共 ${typeNodes.length} 个设备，起始Y坐标: ${currentY}`);
+      
+      // 计算当前类型需要的行数
+      const rowsNeeded = Math.ceil(typeNodes.length / baseConfig.maxNodesPerRow);
+      
+      // 为当前类型的设备布局
       typeNodes.forEach((node, index) => {
         // 计算行和列
-        const row = Math.floor(index / maxNodesPerRow);
-        const col = index % maxNodesPerRow;
+        const row = Math.floor(index / baseConfig.maxNodesPerRow);
+        const col = index % baseConfig.maxNodesPerRow;
         
-        // 计算新位置，减小水平间距以适应更多设备
-        const x = config.startX + col * config.spacing;
-        const y = config.startY + row * config.rowSpacing;
+        // 计算新位置
+        const x = baseConfig.startX + col * baseConfig.spacing;
+        const y = currentY + row * baseConfig.rowSpacing;
         
         // 创建更新后的节点（保留原始ID和数据）
         const updatedNode = {
@@ -336,6 +331,10 @@ function Flow() {
         
         updatedNodes.push(updatedNode);
       });
+      
+      // 更新Y坐标，为下一种类型的设备准备位置
+      // 添加额外的间距作为类型之间的分隔
+      currentY += rowsNeeded * baseConfig.rowSpacing + 150; // 类型之间增加150px额外空间
     });
     
     // 更新所有节点位置
@@ -680,22 +679,13 @@ function Flow() {
       return { x: 100, y: 100 };
     }
     
-    // 设备类型区域定义
-    const typeAreas: Record<string, { startX: number, startY: number, spacing: number }> = {
-      'DavidV100': { startX: 100, startY: 100, spacing: 300 },    // NPU
-      'Hi1650V100': { startX: 100, startY: 400, spacing: 300 },   // CPU
-      'UnionsV100': { startX: 100, startY: 700, spacing: 300 },   // Switch
-      'unknown': { startX: 100, startY: 1000, spacing: 300 }
+    // 基础配置，与自动布局保持一致
+    const baseConfig = {
+      spacing: 300,      // 水平间距
+      rowSpacing: 250,   // 垂直间距
+      startX: 100,       // 起始X坐标
+      maxNodesPerRow: 8  // 每行最多设备数
     };
-    
-    // 确保设备类型有定义
-    if (!typeAreas[deviceType]) {
-      typeAreas[deviceType] = { 
-        startX: 100, 
-        startY: 1200 + Object.keys(typeAreas).length * 250, 
-        spacing: 300 
-      };
-    }
     
     // 获取设备尺寸
     const deviceDims = getNodeDimensions({ 
@@ -709,67 +699,136 @@ function Flow() {
         left: node.position.x - 30, // 添加30px的安全边距
         right: node.position.x + dims.width + 30,
         top: node.position.y - 30,
-        bottom: node.position.y + dims.height + 30
+        bottom: node.position.y + dims.height + 30,
+        type: node.data.type || 'unknown' // 记录节点类型
       };
     });
     
-    const area = typeAreas[deviceType];
-    const maxNodesPerRow = 8; // 修改为每行8个设备
+    // 按类型分组节点
+    const devicesByType: Record<string, typeof occupiedAreas> = {};
     
-    // 对特定类型的设备计数
-    const sameTypeNodes = nodes.filter(node => 
-      node.data.type === deviceType || 
-      (deviceType === 'unknown' && !node.data.type)
-    );
+    occupiedAreas.forEach(area => {
+      const type = area.type;
+      if (!devicesByType[type]) {
+        devicesByType[type] = [];
+      }
+      devicesByType[type].push(area);
+    });
     
-    let proposedX = area.startX;
-    let proposedY = area.startY;
+    // 获取当前设备类型的所有区域
+    const currentTypeAreas = devicesByType[deviceType] || [];
     
-    // 尝试放置在网格中
-    let placed = false;
-    let row = 0;
-    let maxAttemptsPerRow = maxNodesPerRow; // 防止无限循环，与每行最大设备数一致
+    // 找出当前设备类型的区域范围
+    let minY = 100; // 默认起始Y坐标
+    let maxY = minY;
     
-    while (!placed && row < 10) { // 最多尝试10行
-      for (let col = 0; col < maxNodesPerRow; col++) {
-        proposedX = area.startX + col * area.spacing;
-        proposedY = area.startY + row * (deviceDims.height + 80); // 80px的行间距
-        
-        const newArea = {
-          left: proposedX,
-          right: proposedX + deviceDims.width,
-          top: proposedY,
-          bottom: proposedY + deviceDims.height
-        };
-        
-        // 检查是否与任何现有区域重叠
-        const hasOverlap = occupiedAreas.some(area => 
-          !(newArea.left > area.right || 
-            newArea.right < area.left || 
-            newArea.top > area.bottom || 
-            newArea.bottom < area.top)
-        );
-        
-        if (!hasOverlap) {
-          placed = true;
-          break;
+    if (currentTypeAreas.length > 0) {
+      // 如果已有同类型设备，使用它们的区域来确定位置
+      minY = Math.min(...currentTypeAreas.map(area => area.top));
+      maxY = Math.max(...currentTypeAreas.map(area => area.bottom));
+    } else {
+      // 如果没有同类型设备，则基于其他类型设备的位置来确定新位置
+      // 从小到大排序各类型设备的最大Y坐标
+      const typesMaxY: Array<{type: string, maxY: number}> = [];
+      
+      Object.entries(devicesByType).forEach(([type, areas]) => {
+        if (areas.length > 0) {
+          typesMaxY.push({
+            type,
+            maxY: Math.max(...areas.map(area => area.bottom))
+          });
+        }
+      });
+      
+      typesMaxY.sort((a, b) => a.maxY - b.maxY);
+      
+      // 找到应该放置的位置
+      const typeIndex = Object.keys(devicesByType).indexOf(deviceType);
+      if (typeIndex > 0 && typesMaxY.length > 0) {
+        // 寻找应该放在哪个类型的下方
+        let placeBelowIndex = -1;
+        for (let i = 0; i < typesMaxY.length; i++) {
+          if (typesMaxY[i].type < deviceType) {
+            placeBelowIndex = i;
+          } else {
+            break;
+          }
         }
         
-        // 防止在同一行无限尝试
-        if (col === maxNodesPerRow - 1 || col >= maxAttemptsPerRow) {
-          row++;
-          break;
+        if (placeBelowIndex >= 0) {
+          // 放在前一个类型的下方
+          minY = typesMaxY[placeBelowIndex].maxY + 150; // 添加150px的类型间距
+        } else {
+          // 放在第一个位置
+          minY = 100;
+        }
+      } else {
+        // 如果是未知类型或应该放在最后，则放在所有设备的下方
+        if (typesMaxY.length > 0) {
+          minY = typesMaxY[typesMaxY.length - 1].maxY + 150;
+        }
+      }
+      
+      maxY = minY; // 初始情况下，最大Y等于最小Y
+    }
+    
+    // 计算可以容纳设备的位置
+    let bestPosition = { x: baseConfig.startX, y: minY };
+    let bestOverlap = Number.MAX_VALUE;
+    
+    // 在当前类型区域内寻找最佳位置
+    const rowsToCheck = 3; // 检查3行
+    
+    for (let row = 0; row < rowsToCheck; row++) {
+      for (let col = 0; col < baseConfig.maxNodesPerRow; col++) {
+        const x = baseConfig.startX + col * baseConfig.spacing;
+        const y = minY + row * baseConfig.rowSpacing;
+        
+        const newArea = {
+          left: x,
+          right: x + deviceDims.width,
+          top: y,
+          bottom: y + deviceDims.height
+        };
+        
+        // 计算与所有设备的重叠程度
+        let totalOverlap = 0;
+        let hasDirectOverlap = false;
+        
+        occupiedAreas.forEach(area => {
+          if (!(newArea.left > area.right || 
+                newArea.right < area.left || 
+                newArea.top > area.bottom || 
+                newArea.bottom < area.top)) {
+            hasDirectOverlap = true;
+            totalOverlap += 1000; // 直接重叠，给予很高的惩罚
+          } else {
+            // 计算距离
+            const dx = Math.max(0, 
+              Math.min(Math.abs(newArea.left - area.right), Math.abs(newArea.right - area.left)));
+            const dy = Math.max(0, 
+              Math.min(Math.abs(newArea.top - area.bottom), Math.abs(newArea.bottom - area.top)));
+            totalOverlap += 1 / (dx * dx + dy * dy + 1);
+          }
+        });
+        
+        // 如果没有直接重叠，且overlap更小，更新最佳位置
+        if (!hasDirectOverlap && totalOverlap < bestOverlap) {
+          bestOverlap = totalOverlap;
+          bestPosition = { x, y };
         }
       }
     }
     
-    // 如果无法在网格中找到位置，放在最下方
-    if (!placed) {
-      const maxBottom = Math.max(...occupiedAreas.map(area => area.bottom));
-      proposedY = maxBottom + 80; // 添加80px的垂直间距
+    // 如果无法找到不重叠的位置，则放在当前类型区域的下方
+    if (bestOverlap === Number.MAX_VALUE) {
+      bestPosition = { 
+        x: baseConfig.startX, 
+        y: maxY + baseConfig.rowSpacing 
+      };
     }
     
-    return { x: proposedX, y: proposedY };
+    return bestPosition;
   };
 
   const handleAddDeviceClick = () => {
