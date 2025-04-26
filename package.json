@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:auto": "node start-dev.js",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "commit": "node auto-commit.js"
   },
   "dependencies": {
     "@reactflow/background": "^11.3.14",
