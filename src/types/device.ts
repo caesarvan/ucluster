@@ -88,31 +88,50 @@ export const createDeviceFromTemplate = (template: DeviceTemplate, label: string
 // 默认设备模板
 export const defaultDeviceTemplates: DeviceTemplate[] = [
   {
-    id: 'switch',
-    name: '交换机',
-    description: '标准交换机，具有两组端口',
+    id: 'DavidV100',
+    name: 'NPU芯片',
+    description: 'NPU芯片，具有两组端口',
     portGroups: [
       { name: '端口组1', portCount: 9 },
       { name: '端口组2', portCount: 9 }
     ]
   },
   {
-    id: 'router',
-    name: '路由器',
-    description: '标准路由器，具有四组端口',
+    id: 'Hi1650V100',
+    name: 'CPU芯片',
+    description: 'CPU芯片，具有两组端口',
     portGroups: [
-      { name: '端口组1', portCount: 4 },
-      { name: '端口组2', portCount: 4 },
-      { name: '端口组3', portCount: 4 },
-      { name: '端口组4', portCount: 4 }
+      { name: '端口组1', portCount: 9 },
+      { name: '端口组2', portCount: 9 }
     ]
   },
   {
-    id: 'server',
-    name: '服务器',
-    description: '标准服务器，具有一组端口',
-    portGroups: [
-      { name: '网络端口', portCount: 4 }
-    ]
-  }
+  id: 'UnionsV100',
+  name: 'Switch芯片',
+  description: 'Switch芯片，具有两组端口',
+  portGroups: [
+    { name: '端口组1', portCount: 9 },
+    { name: '端口组2', portCount: 9 }
+  ]
+},
+  
+  // {
+  //   id: 'router',
+  //   name: '路由器',
+  //   description: '标准路由器，具有四组端口',
+  //   portGroups: [
+  //     { name: '端口组1', portCount: 4 },
+  //     { name: '端口组2', portCount: 4 },
+  //     { name: '端口组3', portCount: 4 },
+  //     { name: '端口组4', portCount: 4 }
+  //   ]
+  // },
+  // {
+  //   id: 'server',
+  //   name: '服务器',
+  //   description: '标准服务器，具有一组端口',
+  //   portGroups: [
+  //     { name: '网络端口', portCount: 4 }
+  //   ]
+  // }
 ]; 

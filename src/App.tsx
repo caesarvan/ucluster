@@ -287,10 +287,10 @@ function Flow() {
     
     // 设置每种类型的起始坐标和间距
     const typeConfig: Record<string, { startX: number, startY: number, spacing: number, rowSpacing: number }> = {
-      'switch': { startX: 100, startY: 100, spacing: 350, rowSpacing: 350 },
-      'router': { startX: 100, startY: 600, spacing: 350, rowSpacing: 350 },
-      'server': { startX: 100, startY: 1100, spacing: 350, rowSpacing: 300 },
-      'unknown': { startX: 100, startY: 1500, spacing: 350, rowSpacing: 300 }
+      'switch': { startX: 100, startY: 100, spacing: 350, rowSpacing: 250 },
+      'router': { startX: 100, startY: 400, spacing: 350, rowSpacing: 250 },
+      'server': { startX: 100, startY: 700, spacing: 350, rowSpacing: 220 },
+      'unknown': { startX: 100, startY: 1000, spacing: 350, rowSpacing: 220 }
     };
     
     // 对于其他类型的设备，动态添加配置
@@ -299,9 +299,9 @@ function Flow() {
         const typesCount = Object.keys(typeConfig).length;
         typeConfig[type] = {
           startX: 100,
-          startY: 1800 + (typesCount - 4) * 400, // 4是预设的类型数量
+          startY: 1200 + (typesCount - 4) * 220, // 4是预设的类型数量
           spacing: 350,
-          rowSpacing: 350
+          rowSpacing: 220
         };
       }
     });
@@ -677,18 +677,18 @@ function Flow() {
     
     // 设备类型区域定义
     const typeAreas: Record<string, { startX: number, startY: number, spacing: number }> = {
-      'switch': { startX: 100, startY: 100, spacing: 400 },
-      'router': { startX: 100, startY: 600, spacing: 400 },
-      'server': { startX: 100, startY: 1100, spacing: 400 },
-      'unknown': { startX: 100, startY: 1600, spacing: 400 }
+      'switch': { startX: 100, startY: 100, spacing: 350 },
+      'router': { startX: 100, startY: 400, spacing: 350 },
+      'server': { startX: 100, startY: 700, spacing: 350 },
+      'unknown': { startX: 100, startY: 1000, spacing: 350 }
     };
     
     // 确保设备类型有定义
     if (!typeAreas[deviceType]) {
       typeAreas[deviceType] = { 
         startX: 100, 
-        startY: 2000 + Object.keys(typeAreas).length * 400, 
-        spacing: 400 
+        startY: 1200 + Object.keys(typeAreas).length * 250, 
+        spacing: 350 
       };
     }
     
@@ -701,10 +701,10 @@ function Flow() {
     const occupiedAreas = nodes.map(node => {
       const dims = getNodeDimensions(node);
       return {
-        left: node.position.x - 50, // 添加50px的安全边距
-        right: node.position.x + dims.width + 50,
-        top: node.position.y - 50,
-        bottom: node.position.y + dims.height + 50
+        left: node.position.x - 30, // 添加30px的安全边距
+        right: node.position.x + dims.width + 30,
+        top: node.position.y - 30,
+        bottom: node.position.y + dims.height + 30
       };
     });
     
@@ -728,7 +728,7 @@ function Flow() {
     while (!placed && row < 10) { // 最多尝试10行
       for (let col = 0; col < maxNodesPerRow; col++) {
         proposedX = area.startX + col * area.spacing;
-        proposedY = area.startY + row * (deviceDims.height + 150); // 150px的行间距
+        proposedY = area.startY + row * (deviceDims.height + 80); // 80px的行间距
         
         const newArea = {
           left: proposedX,
@@ -761,11 +761,8 @@ function Flow() {
     // 如果无法在网格中找到位置，放在最下方
     if (!placed) {
       const maxBottom = Math.max(...occupiedAreas.map(area => area.bottom));
-      proposedY = maxBottom + 150; // 添加150px的垂直间距
+      proposedY = maxBottom + 80; // 添加80px的垂直间距
     }
-    
-    // 打印位置调试信息到控制台
-    console.log(`为${deviceType}设备找到位置: (${proposedX}, ${proposedY})`);
     
     return { x: proposedX, y: proposedY };
   };
