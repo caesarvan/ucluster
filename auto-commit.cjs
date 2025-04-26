@@ -1,10 +1,5 @@
-import { exec } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// 获取当前文件的目录
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { exec } = require('child_process');
+const path = require('path');
 
 // 获取当前日期和时间
 const getDateTime = () => {
