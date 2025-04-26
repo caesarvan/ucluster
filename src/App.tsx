@@ -259,14 +259,25 @@ function Flow() {
 
   // 自动排布
   const handleAutoLayout = () => {
-    // 清空现有位置以便重新计算
-    const newNodes = [...nodes];
-    const tempNodes: Node[] = [];
+    // 保存历史状态
+    saveToHistory();
     
-    // 首先按类型对节点进行分组
-    const devicesByType: Record<string, Node[]> = {};
+    // 保存现有的连接
+    const existingEdges = [...edges];
     
-    nodes.forEach(node => {
+    // 复制节点而不是创建新的节点列表（保留ID和数据）
+    const nodesToLayout = [...nodes]; 
+    
+    // 按设备类型分组
+    const devicesByType: Record<string, Node[]> = {
+      'switch': [],
+      'router': [],
+      'server': [],
+      'unknown': []
+    };
+    
+    // 对节点进行分类
+    nodesToLayout.forEach(node => {
       const type = node.data.type || 'unknown';
       if (!devicesByType[type]) {
         devicesByType[type] = [];
@@ -274,75 +285,59 @@ function Flow() {
       devicesByType[type].push(node);
     });
     
-    // 按顺序处理设备类型
-    const orderedTypes = ['switch', 'router', 'server'];
-    const processedNodes = new Set<string>();
+    // 设置每种类型的起始坐标和间距
+    const typeConfig: Record<string, { startX: number, startY: number, spacing: number, rowSpacing: number }> = {
+      'switch': { startX: 100, startY: 100, spacing: 350, rowSpacing: 350 },
+      'router': { startX: 100, startY: 600, spacing: 350, rowSpacing: 350 },
+      'server': { startX: 100, startY: 1100, spacing: 350, rowSpacing: 300 },
+      'unknown': { startX: 100, startY: 1500, spacing: 350, rowSpacing: 300 }
+    };
     
-    // 处理已知类型
-    orderedTypes.forEach(type => {
-      const typeNodes = devicesByType[type] || [];
+    // 对于其他类型的设备，动态添加配置
+    Object.keys(devicesByType).forEach(type => {
+      if (!typeConfig[type]) {
+        const typesCount = Object.keys(typeConfig).length;
+        typeConfig[type] = {
+          startX: 100,
+          startY: 1800 + (typesCount - 4) * 400, // 4是预设的类型数量
+          spacing: 350,
+          rowSpacing: 350
+        };
+      }
+    });
+    
+    // 创建一个新的节点列表，保持节点ID不变
+    const updatedNodes: Node[] = [];
+    
+    // 布局每种类型的设备
+    Object.entries(devicesByType).forEach(([type, typeNodes]) => {
+      const config = typeConfig[type];
+      const maxNodesPerRow = 3;
       
-      typeNodes.forEach(node => {
-        if (processedNodes.has(node.id)) return;
+      typeNodes.forEach((node, index) => {
+        // 计算行和列
+        const row = Math.floor(index / maxNodesPerRow);
+        const col = index % maxNodesPerRow;
         
-        // 暂时将这个节点从节点列表中移除
-        // 这样findNewNodePosition不会考虑它
-        const nodeIndex = newNodes.findIndex(n => n.id === node.id);
-        if (nodeIndex !== -1) {
-          newNodes.splice(nodeIndex, 1);
-        }
+        // 计算新位置
+        const x = config.startX + col * config.spacing;
+        const y = config.startY + row * config.rowSpacing;
         
-        // 使用当前的节点列表找到新位置
-        const position = findNewNodePosition(type);
-        
-        // 创建具有新位置的节点副本
+        // 创建更新后的节点（保留原始ID和数据）
         const updatedNode = {
           ...node,
-          position
+          position: { x, y }
         };
         
-        // 添加到临时列表中
-        tempNodes.push(updatedNode);
-        
-        // 添加回节点列表以便下一个节点可以考虑它
-        newNodes.push(updatedNode);
-        
-        // 标记为已处理
-        processedNodes.add(node.id);
+        updatedNodes.push(updatedNode);
       });
     });
     
-    // 处理其他类型的节点
-    newNodes.forEach(node => {
-      if (processedNodes.has(node.id)) return;
-      
-      const type = node.data.type || 'unknown';
-      
-      // 暂时移除节点
-      const nodeIndex = newNodes.findIndex(n => n.id === node.id);
-      if (nodeIndex !== -1) {
-        newNodes.splice(nodeIndex, 1);
-      }
-      
-      // 找到新位置
-      const position = findNewNodePosition(type);
-      
-      // 创建更新后的节点
-      const updatedNode = {
-        ...node,
-        position
-      };
-      
-      // 添加到临时和主节点列表
-      tempNodes.push(updatedNode);
-      newNodes.push(updatedNode);
-      
-      // 标记为已处理
-      processedNodes.add(node.id);
-    });
-    
     // 更新所有节点位置
-    setNodes(tempNodes);
+    setNodes(updatedNodes);
+    
+    // 确保连接保持不变
+    setEdges(existingEdges);
     
     // 延迟执行 fitView，确保节点位置更新后再调整视图
     setTimeout(() => {
