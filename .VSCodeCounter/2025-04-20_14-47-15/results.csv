@@ -1,0 +1,23 @@
+"filename", "language", "JavaScript", "JSON", "JSON with Comments", "Markdown", "HTML", "CSS", "XML", "TypeScript", "TypeScript JSX", "comment", "blank", "total"
+"d:\code\ucluster\network-topology\README.md", "Markdown", 0, 0, 0, 45, 0, 0, 0, 0, 0, 0, 10, 55
+"d:\code\ucluster\network-topology\eslint.config.js", "JavaScript", 27, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 29
+"d:\code\ucluster\network-topology\index.html", "HTML", 0, 0, 0, 0, 13, 0, 0, 0, 0, 0, 1, 14
+"d:\code\ucluster\network-topology\package-lock.json", "JSON", 0, 4620, 0, 0, 0, 0, 0, 0, 0, 0, 1, 4621
+"d:\code\ucluster\network-topology\package.json", "JSON", 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 1, 37
+"d:\code\ucluster\network-topology\postcss.config.js", "JavaScript", 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 7
+"d:\code\ucluster\network-topology\public\vite.svg", "XML", 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\code\ucluster\network-topology\src\App.css", "CSS", 0, 0, 0, 0, 0, 128, 0, 0, 0, 7, 26, 161
+"d:\code\ucluster\network-topology\src\App.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 1167, 87, 124, 1378
+"d:\code\ucluster\network-topology\src\assets\react.svg", "XML", 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+"d:\code\ucluster\network-topology\src\components\DeviceNode.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 157, 11, 13, 181
+"d:\code\ucluster\network-topology\src\index.css", "CSS", 0, 0, 0, 0, 0, 106, 0, 0, 0, 0, 18, 124
+"d:\code\ucluster\network-topology\src\main.tsx", "TypeScript JSX", 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 2, 11
+"d:\code\ucluster\network-topology\src\store\useStore.ts", "TypeScript", 0, 0, 0, 0, 0, 0, 0, 88, 0, 3, 9, 100
+"d:\code\ucluster\network-topology\src\types\device.ts", "TypeScript", 0, 0, 0, 0, 0, 0, 0, 106, 0, 3, 9, 118
+"d:\code\ucluster\network-topology\src\vite-env.d.ts", "TypeScript", 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2
+"d:\code\ucluster\network-topology\tailwind.config.js", "JavaScript", 10, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 11
+"d:\code\ucluster\network-topology\tsconfig.app.json", "JSON", 0, 22, 0, 0, 0, 0, 0, 0, 0, 2, 3, 27
+"d:\code\ucluster\network-topology\tsconfig.json", "JSON with Comments", 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 1, 8
+"d:\code\ucluster\network-topology\tsconfig.node.json", "JSON", 0, 20, 0, 0, 0, 0, 0, 0, 0, 2, 3, 25
+"d:\code\ucluster\network-topology\vite.config.ts", "TypeScript", 0, 0, 0, 0, 0, 0, 0, 5, 0, 1, 2, 8
+"Total", "-", 43, 4698, 7, 45, 13, 234, 2, 199, 1333, 118, 227, 6919

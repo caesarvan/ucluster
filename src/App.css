@@ -1,0 +1,166 @@
+#root {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* 端口状态样式 */
+.port-connected {
+  background-color: #bbf7d0 !important;
+  color: #166534 !important;
+}
+
+.port-disconnected {
+  background-color: #fecaca !important;
+  color: #991b1b !important;
+}
+
+/* 连接点样式 */
+.react-flow__handle {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background-color: #555 !important;
+  border: 2px solid #fff !important;
+  transition: all 0.2s ease !important;
+  cursor: crosshair !important;
+  z-index: 10 !important;
+}
+
+.react-flow__handle:hover {
+  width: 28px !important;
+  height: 28px !important;
+  background-color: #888 !important;
+  cursor: crosshair !important;
+}
+
+/* 暗色模式下的连接点样式 */
+.dark .react-flow__handle {
+  background-color: #888 !important;
+  border-color: #333 !important;
+}
+
+.dark .react-flow__handle:hover {
+  background-color: #aaa !important;
+}
+
+/* 调整连接点的位置以适应新的大小 */
+.react-flow__handle-left {
+  left: -12px !important;
+}
+
+.react-flow__handle-right {
+  right: -12px !important;
+}
+
+/* 提高连接线的捕获能力 */
+.react-flow__connectionline {
+  pointer-events: all !important;
+  z-index: 1000 !important;
+  cursor: crosshair !important;
+}
+
+/* 增强连接点的吸附能力 */
+.react-flow__connection-path {
+  stroke-width: 3 !important;
+}
+
+/* 连线样式 */
+.react-flow__edge {
+  pointer-events: all !important;
+  cursor: pointer !important;
+}
+
+.react-flow__edge path {
+  stroke-width: 2;
+  transition: all 0.2s ease;
+}
+
+/* 创建一个透明的、更宽的路径作为点击区域 */
+.react-flow__edge path.react-flow__edge-interaction {
+  stroke-width: 12 !important;
+  stroke: transparent !important;
+  stroke-opacity: 0 !important;
+  fill: none !important;
+  pointer-events: all !important;
+}
+
+/* 悬停和选中状态 */
+.react-flow__edge:hover path.react-flow__edge-path {
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.3));
+}
+
+.react-flow__edge.selected path.react-flow__edge-path {
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.5));
+}
+
+.react-flow__edge-path {
+  stroke: #b1b1b7;
+  stroke-width: 2;
+}
+
+.react-flow__node {
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+}
+
+.react-flow__node-default {
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+}
