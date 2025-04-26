@@ -1,20 +1,30 @@
+export interface CustomAttribute {
+  id: string;
+  name: string;
+  value: string | number;
+  type: 'string' | 'number';
+}
+
 export interface Port {
   id: string;
   name: string;
   status: 'connected' | 'disconnected';
   speed?: string;
+  customAttributes?: CustomAttribute[];
 }
 
 export interface PortGroup {
   id: string;
   name: string;
   ports: Port[];
+  customAttributes?: CustomAttribute[];
 }
 
 export interface DeviceData {
   label: string;
   type: string;
   portGroups: PortGroup[];
+  customAttributes?: CustomAttribute[];
 }
 
 export interface DeviceTemplate {
@@ -43,23 +53,29 @@ export const createDefaultPortGroup = (id: string, name: string): PortGroup => (
 
 export const createDefaultDeviceData = (label: string): DeviceData => ({
   label,
+  type: 'unknown',
+  customAttributes: [],
   portGroups: [
     {
       id: 'group-1',
       name: '端口组1',
+      customAttributes: [],
       ports: Array.from({ length: 9 }, (_, i) => ({
         id: `group-1-port-${i + 1}`,
         name: `端口 ${i + 1}`,
-        status: 'disconnected'
+        status: 'disconnected',
+        customAttributes: []
       }))
     },
     {
       id: 'group-2',
       name: '端口组2',
+      customAttributes: [],
       ports: Array.from({ length: 9 }, (_, i) => ({
         id: `group-2-port-${i + 1}`,
         name: `端口 ${i + 1}`,
-        status: 'disconnected'
+        status: 'disconnected',
+        customAttributes: []
       }))
     }
   ]
@@ -69,10 +85,12 @@ export const createDefaultDeviceData = (label: string): DeviceData => ({
 export const createPortGroup = (groupId: string, name: string, portCount: number): PortGroup => ({
   id: groupId,
   name,
+  customAttributes: [],
   ports: Array.from({ length: portCount }, (_, i) => ({
     id: `${groupId}-port-${i + 1}`,
     name: `端口 ${i + 1}`,
-    status: 'disconnected'
+    status: 'disconnected',
+    customAttributes: []
   }))
 });
 

@@ -1,27 +1,9 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection } from 'reactflow';
-import { createDefaultDeviceData, Port, PortGroup } from '../types/device';
+import { createDefaultDeviceData, Port, PortGroup, DeviceData } from '../types/device';
 
-const initialNodes: Node[] = [
-  {
-    id: '1',
-    type: 'device',
-    data: createDefaultDeviceData('设备 1'),
-    position: { x: 250, y: 25 },
-  },
-  {
-    id: '2',
-    type: 'device',
-    data: createDefaultDeviceData('设备 2'),
-    position: { x: 100, y: 125 },
-  },
-  {
-    id: '3',
-    type: 'device',
-    data: createDefaultDeviceData('设备 3'),
-    position: { x: 250, y: 250 },
-  },
-];
+// 将初始节点设置为空数组，不放置默认设备
+const initialNodes: Node[] = [];
 
 const initialEdges: Edge[] = [];
 
@@ -29,17 +11,28 @@ interface FlowState {
   nodes: Node[];
   edges: Edge[];
   addNode: (node: Node) => void;
+  addNodes: (nodesToAdd: Node[]) => void;
   deleteNode: (nodeId: string) => void;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   updatePortStatus: (nodeId: string, portId: string, status: Port['status']) => void;
+  updateNodeData: (nodeId: string, data: DeviceData) => void;
 }
 
 const useStore = create<FlowState>((set) => {
   return {
     nodes: initialNodes,
     edges: initialEdges,
-    addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
+    addNode: (node) => set((state) => {
+      console.log(`添加单个节点: ${node.id}`, node);
+      return { nodes: [...state.nodes, node] };
+    }),
+    addNodes: (nodesToAdd) => set((state) => {
+      console.log(`批量添加 ${nodesToAdd.length} 个节点`);
+      const allNodes = [...state.nodes, ...nodesToAdd];
+      console.log(`节点总数: ${allNodes.length}`);
+      return { nodes: allNodes };
+    }),
     deleteNode: (nodeId) =>
       set((state) => ({
         nodes: state.nodes.filter((node) => node.id !== nodeId),
@@ -88,6 +81,27 @@ const useStore = create<FlowState>((set) => {
                     return (isMatchingGroup && isMatchingPort) ? { ...port, status } : port;
                   }),
                 })),
+              },
+            };
+          }
+          return node;
+        }),
+      })),
+    updateNodeData: (nodeId, data) =>
+      set((state) => ({
+        nodes: state.nodes.map((node) => {
+          if (node.id === nodeId) {
+            console.log('Updating node data:', {
+              nodeId,
+              data,
+              currentData: node.data
+            });
+            
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                ...data
               },
             };
           }
