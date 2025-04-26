@@ -32,9 +32,12 @@ const DeviceNode = ({ data, id }: NodeProps<DeviceData>) => {
         ? 'bg-gray-800/90 border-gray-600' 
         : 'bg-white/80 border-stone-400'
     } border-2`}>
-      {/* 设备编号 - 左上角显示 */}
-      <div className="absolute -top-6 -left-2 bg-gray-800 text-white px-2 py-0.5 rounded-full text-sm font-bold">
-        设备{id}
+      {/* 设备标题 - 上方显示设备编号和类型 */}
+      <div className="absolute -top-7 left-0 right-0 flex items-center justify-center">
+        <div className="bg-gray-800 text-white px-2.5 py-1 rounded-md text-sm font-bold flex gap-1.5 items-center">
+          <span className="bg-yellow-500 text-black px-1.5 py-0.5 rounded text-xs">#{id}</span>
+          <span>{data.type || '未知类型'}</span>
+        </div>
       </div>
 
       {/* 端口组容器 - 两列布局 */}
