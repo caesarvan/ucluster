@@ -1002,16 +1002,30 @@ function Flow() {
 
   const handleDeleteNode = useCallback(() => {
     if (selectedNode) {
+      // 保存历史记录，以便撤销
       saveToHistory();
+      
+      console.log(`正在删除设备: ${selectedNode}`);
+      
+      // 删除选中的节点
       deleteNode(selectedNode);
+      
+      // 重置选中状态
       setSelectedNode(null);
+      setSelectedNodes([]);
       
       // 延迟更新编号，确保删除操作完成
       setTimeout(() => {
         updateAllDeviceNumbers();
+        
+        // 通知用户
+        setErrorMessage('已删除选中的设备');
       }, 100);
+    } else {
+      console.log('没有选中的设备可删除');
+      setErrorMessage('请先选择要删除的设备');
     }
-  }, [selectedNode, deleteNode, saveToHistory]);
+  }, [selectedNode, deleteNode, saveToHistory, updateAllDeviceNumbers]);
 
   // 更新边的属性
   const updateEdgeProperties = useCallback(() => {
@@ -1395,7 +1409,7 @@ function Flow() {
 
         {/* 选中提示 */}
         {(selectedNodes.length > 0 || selectedEdges.length > 0) && (
-          <Panel position="top-center" className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-600'} p-3 rounded shadow mt-16`}>
+          <Panel position="bottom-left" className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-600'} p-3 rounded shadow mb-16 ml-4 z-20`}>
             <div className="text-base">
               已选中 {selectedNodes.length} 个设备和 {selectedEdges.length} 条连线
               {selectionMode === 'select' ? 
