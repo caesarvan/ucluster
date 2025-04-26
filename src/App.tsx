@@ -259,7 +259,11 @@ function Flow() {
 
   // 自动排布
   const handleAutoLayout = () => {
-    // 按设备类型分组
+    // 清空现有位置以便重新计算
+    const newNodes = [...nodes];
+    const tempNodes: Node[] = [];
+    
+    // 首先按类型对节点进行分组
     const devicesByType: Record<string, Node[]> = {};
     
     nodes.forEach(node => {
@@ -270,70 +274,83 @@ function Flow() {
       devicesByType[type].push(node);
     });
     
-    // 使用我们优化过的布局算法重新定位所有节点
-    const newNodes = [...nodes];
+    // 按顺序处理设备类型
+    const orderedTypes = ['switch', 'router', 'server'];
+    const processedNodes = new Set<string>();
     
-    // 清除网格以重新创建
-    const processedNodeIds = new Set<string>();
-    
-    // 先处理已排序的类型
-    const orderedTypes = ['switch', 'router', 'server', 'unknown'];
-    
-    // 按顺序处理每个设备类型
+    // 处理已知类型
     orderedTypes.forEach(type => {
       const typeNodes = devicesByType[type] || [];
       
       typeNodes.forEach(node => {
-        // 跳过已处理的节点
-        if (processedNodeIds.has(node.id)) return;
+        if (processedNodes.has(node.id)) return;
         
-        // 计算新位置
-        const position = findNewNodePosition(type);
-        
-        // 更新节点位置
+        // 暂时将这个节点从节点列表中移除
+        // 这样findNewNodePosition不会考虑它
         const nodeIndex = newNodes.findIndex(n => n.id === node.id);
         if (nodeIndex !== -1) {
-          newNodes[nodeIndex] = {
-            ...newNodes[nodeIndex],
-            position
-          };
-          
-          // 标记为已处理
-          processedNodeIds.add(node.id);
+          newNodes.splice(nodeIndex, 1);
         }
+        
+        // 使用当前的节点列表找到新位置
+        const position = findNewNodePosition(type);
+        
+        // 创建具有新位置的节点副本
+        const updatedNode = {
+          ...node,
+          position
+        };
+        
+        // 添加到临时列表中
+        tempNodes.push(updatedNode);
+        
+        // 添加回节点列表以便下一个节点可以考虑它
+        newNodes.push(updatedNode);
+        
+        // 标记为已处理
+        processedNodes.add(node.id);
       });
     });
     
-    // 处理剩余的其他类型
-    Object.keys(devicesByType).forEach(type => {
-      if (!orderedTypes.includes(type)) {
-        devicesByType[type].forEach(node => {
-          if (processedNodeIds.has(node.id)) return;
-          
-          const position = findNewNodePosition(type);
-          
-          const nodeIndex = newNodes.findIndex(n => n.id === node.id);
-          if (nodeIndex !== -1) {
-            newNodes[nodeIndex] = {
-              ...newNodes[nodeIndex],
-              position
-            };
-            processedNodeIds.add(node.id);
-          }
-        });
+    // 处理其他类型的节点
+    newNodes.forEach(node => {
+      if (processedNodes.has(node.id)) return;
+      
+      const type = node.data.type || 'unknown';
+      
+      // 暂时移除节点
+      const nodeIndex = newNodes.findIndex(n => n.id === node.id);
+      if (nodeIndex !== -1) {
+        newNodes.splice(nodeIndex, 1);
       }
+      
+      // 找到新位置
+      const position = findNewNodePosition(type);
+      
+      // 创建更新后的节点
+      const updatedNode = {
+        ...node,
+        position
+      };
+      
+      // 添加到临时和主节点列表
+      tempNodes.push(updatedNode);
+      newNodes.push(updatedNode);
+      
+      // 标记为已处理
+      processedNodes.add(node.id);
     });
     
-    // 更新节点位置
-    setNodes(newNodes);
+    // 更新所有节点位置
+    setNodes(tempNodes);
     
     // 延迟执行 fitView，确保节点位置更新后再调整视图
     setTimeout(() => {
       fitView({ 
-        padding: 0.1,  // 减小边距，使视图更紧凑
+        padding: 0.2,  // 增加边距，确保所有节点可见
         maxZoom: 1     // 限制自动适应时的最大缩放
       });
-    }, 50);
+    }, 100);
   };
 
   // 导出当前状态为JSON
@@ -663,83 +680,99 @@ function Flow() {
       return { x: 100, y: 100 };
     }
     
-    // 获取设备的尺寸
-    const newNodeDims = getNodeDimensions({ 
-      data: createDefaultDeviceData('新设备')
+    // 设备类型区域定义
+    const typeAreas: Record<string, { startX: number, startY: number, spacing: number }> = {
+      'switch': { startX: 100, startY: 100, spacing: 400 },
+      'router': { startX: 100, startY: 600, spacing: 400 },
+      'server': { startX: 100, startY: 1100, spacing: 400 },
+      'unknown': { startX: 100, startY: 1600, spacing: 400 }
+    };
+    
+    // 确保设备类型有定义
+    if (!typeAreas[deviceType]) {
+      typeAreas[deviceType] = { 
+        startX: 100, 
+        startY: 2000 + Object.keys(typeAreas).length * 400, 
+        spacing: 400 
+      };
+    }
+    
+    // 获取设备尺寸
+    const deviceDims = getNodeDimensions({ 
+      data: createDefaultDeviceData('新设备') 
     } as Node);
     
-    // 定义设备类型的初始放置区域
-    const typePositions: Record<string, { x: number, y: number }> = {
-      'switch': { x: 100, y: 100 },
-      'router': { x: 100, y: 500 },
-      'server': { x: 100, y: 900 },
-      'unknown': { x: 100, y: 1300 }
-    };
-    
-    // 确保设备类型有初始位置
-    if (!typePositions[deviceType]) {
-      typePositions[deviceType] = { x: 100, y: 1700 };
-    }
-    
-    // 采用网格布局，定义网格尺寸
-    const gridSize = {
-      cols: 3,                      // 每行最多放置的设备数
-      cellWidth: newNodeDims.width + 80,   // 单元格宽度 (设备宽度 + 间距)
-      cellHeight: newNodeDims.height + 100 // 单元格高度 (设备高度 + 间距)
-    };
-    
-    // 创建一个二维网格来跟踪已占用的位置
-    const grid: boolean[][] = [];
-    
-    // 初始化网格为空
-    for (let y = 0; y < 50; y++) {  // 支持最多50行
-      grid[y] = [];
-      for (let x = 0; x < gridSize.cols; x++) {
-        grid[y][x] = false;  // false表示位置未被占用
-      }
-    }
-    
-    // 标记所有现有节点占用的网格位置
-    nodes.forEach(node => {
-      // 计算节点在网格中的位置
-      const gridX = Math.floor((node.position.x - 50) / gridSize.cellWidth);
-      const gridY = Math.floor((node.position.y - 50) / gridSize.cellHeight);
-      
-      if (gridX >= 0 && gridX < gridSize.cols && gridY >= 0 && gridY < 50) {
-        grid[gridY][gridX] = true;  // 标记为已占用
-        
-        // 由于设备可能比较大，也标记周围的格子为已占用
-        if (gridX > 0) grid[gridY][gridX-1] = true;
-        if (gridX < gridSize.cols-1) grid[gridY][gridX+1] = true;
-        if (gridY > 0) grid[gridY-1][gridX] = true;
-        if (gridY < 49) grid[gridY+1][gridX] = true;
-      }
+    // 创建一个占用区域列表，包含所有现有节点的位置
+    const occupiedAreas = nodes.map(node => {
+      const dims = getNodeDimensions(node);
+      return {
+        left: node.position.x - 50, // 添加50px的安全边距
+        right: node.position.x + dims.width + 50,
+        top: node.position.y - 50,
+        bottom: node.position.y + dims.height + 50
+      };
     });
     
-    // 计算当前设备类型的起始行
-    let startRow = Math.floor((typePositions[deviceType].y - 50) / gridSize.cellHeight);
-    startRow = Math.max(0, startRow);  // 确保不小于0
+    const area = typeAreas[deviceType];
+    const maxNodesPerRow = 3;
     
-    // 寻找空闲位置
-    for (let row = startRow; row < 50; row++) {
-      for (let col = 0; col < gridSize.cols; col++) {
-        if (!grid[row][col]) {
-          // 找到空闲位置，计算实际坐标
-          const x = 50 + col * gridSize.cellWidth;
-          const y = 50 + row * gridSize.cellHeight;
-          
-          return { x, y };
+    // 对特定类型的设备计数
+    const sameTypeNodes = nodes.filter(node => 
+      node.data.type === deviceType || 
+      (deviceType === 'unknown' && !node.data.type)
+    );
+    
+    let proposedX = area.startX;
+    let proposedY = area.startY;
+    
+    // 尝试放置在网格中
+    let placed = false;
+    let row = 0;
+    let maxAttemptsPerRow = 10; // 防止无限循环
+    
+    while (!placed && row < 10) { // 最多尝试10行
+      for (let col = 0; col < maxNodesPerRow; col++) {
+        proposedX = area.startX + col * area.spacing;
+        proposedY = area.startY + row * (deviceDims.height + 150); // 150px的行间距
+        
+        const newArea = {
+          left: proposedX,
+          right: proposedX + deviceDims.width,
+          top: proposedY,
+          bottom: proposedY + deviceDims.height
+        };
+        
+        // 检查是否与任何现有区域重叠
+        const hasOverlap = occupiedAreas.some(area => 
+          !(newArea.left > area.right || 
+            newArea.right < area.left || 
+            newArea.top > area.bottom || 
+            newArea.bottom < area.top)
+        );
+        
+        if (!hasOverlap) {
+          placed = true;
+          break;
+        }
+        
+        // 防止在同一行无限尝试
+        if (col === maxNodesPerRow - 1 || col >= maxAttemptsPerRow) {
+          row++;
+          break;
         }
       }
     }
     
-    // 如果所有位置都被占用，放在最下方的新行
-    const maxY = Math.max(...nodes.map(node => {
-      const dims = getNodeDimensions(node);
-      return node.position.y + dims.height;
-    }));
+    // 如果无法在网格中找到位置，放在最下方
+    if (!placed) {
+      const maxBottom = Math.max(...occupiedAreas.map(area => area.bottom));
+      proposedY = maxBottom + 150; // 添加150px的垂直间距
+    }
     
-    return { x: 100, y: maxY + 150 };
+    // 打印位置调试信息到控制台
+    console.log(`为${deviceType}设备找到位置: (${proposedX}, ${proposedY})`);
+    
+    return { x: proposedX, y: proposedY };
   };
 
   const handleAddDeviceClick = () => {
@@ -1001,7 +1034,7 @@ function Flow() {
     setTimeout(() => {
       fitView({ padding: 0.1 });
     }, 50);
-  }, []);
+  }, [defaultDeviceTemplates, setNodes, fitView]);
   
   // 测试按钮点击处理
   const handleTestAddDevices = () => {
@@ -1427,3 +1460,5 @@ function App() {
 }
 
 export default App;
+
+
