@@ -999,49 +999,6 @@ function Flow() {
     setSelectionMode(mode => mode === 'drag' ? 'select' : 'drag');
   }, []);
 
-  // 测试函数 - 自动添加设备
-  const addTestDevices = useCallback(() => {
-    // 添加多个不同类型的设备测试布局
-    const testDevices = [
-      { type: 'switch', count: 5 },
-      { type: 'router', count: 5 },
-      { type: 'server', count: 5 }
-    ];
-    
-    const newNodes: Node[] = [];
-    
-    testDevices.forEach(({ type, count }) => {
-      // 查找对应的设备模板
-      const template = defaultDeviceTemplates.find(t => t.id === type);
-      if (!template) return;
-      
-      // 创建指定数量的设备
-      for (let i = 0; i < count; i++) {
-        const position = findNewNodePosition(type);
-        const newNode: Node = {
-          id: `${type}-${i + 1}`,
-          type: 'device',
-          data: createDeviceFromTemplate(template, `${template.name} ${i + 1}`),
-          position
-        };
-        newNodes.push(newNode);
-      }
-    });
-    
-    setNodes(newNodes);
-    
-    // 等布局完成后调整视图
-    setTimeout(() => {
-      fitView({ padding: 0.1 });
-    }, 50);
-  }, [defaultDeviceTemplates, setNodes, fitView]);
-  
-  // 测试按钮点击处理
-  const handleTestAddDevices = () => {
-    saveToHistory();
-    addTestDevices();
-  };
-
   return (
     <div className={`w-screen h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'}`}>
       <ReactFlow
@@ -1170,12 +1127,6 @@ function Flow() {
             className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded text-base"
           >
             自动排布
-          </button>
-          <button
-            onClick={handleTestAddDevices}
-            className="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded text-base"
-          >
-            测试添加设备
           </button>
           <button
             onClick={undo}
@@ -1437,14 +1388,14 @@ function Flow() {
             }`}
             placeholder="输入连线标签"
           />
-      </div>
+        </div>
         {selectedEdge && (
           <button
             onClick={updateEdgeProperties}
             className="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600"
           >
             更新连线属性
-        </button>
+          </button>
         )}
       </div>
     </div>
