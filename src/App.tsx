@@ -197,7 +197,7 @@ const getEdgeStyle = (sourceY: number, targetY: number, sourceX: number, targetX
 };
 
 function Flow() {
-  const { nodes, edges, addNode, deleteNode, setNodes, setEdges, updatePortStatus } = useStore();
+  const { nodes, edges, addNode, addNodes, deleteNode, setNodes, setEdges, updatePortStatus } = useStore();
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -218,6 +218,7 @@ function Flow() {
   const [copiedNodes, setCopiedNodes] = useState<Node[]>([]);
   const [selectionMode, setSelectionMode] = useState<'drag' | 'select'>('drag');
   const [isDragging, setIsDragging] = useState(false);
+  const [deviceCount, setDeviceCount] = useState<number>(1); // 添加设备数量状态
   
   // 添加历史记录状态
   const [history, setHistory] = useState<{
@@ -227,6 +228,10 @@ function Flow() {
     past: [],
     future: [],
   });
+
+  // 添加状态来追踪是否需要在节点更新后执行布局
+  const [shouldLayoutAfterAdd, setShouldLayoutAfterAdd] = useState<boolean>(false);
+  const [layoutTrigger, setLayoutTrigger] = useState<number>(0);
 
   useEffect(() => {
     if (errorMessage) {
@@ -270,9 +275,9 @@ function Flow() {
     
     // 按设备类型分组
     const devicesByType: Record<string, Node[]> = {
-      'switch': [],
-      'router': [],
-      'server': [],
+      'DavidV100': [],  // NPU芯片
+      'Hi1650V100': [], // CPU芯片
+      'UnionsV100': [], // Switch芯片
       'unknown': []
     };
     
@@ -287,10 +292,10 @@ function Flow() {
     
     // 设置每种类型的起始坐标和间距
     const typeConfig: Record<string, { startX: number, startY: number, spacing: number, rowSpacing: number }> = {
-      'switch': { startX: 100, startY: 100, spacing: 350, rowSpacing: 250 },
-      'router': { startX: 100, startY: 400, spacing: 350, rowSpacing: 250 },
-      'server': { startX: 100, startY: 700, spacing: 350, rowSpacing: 220 },
-      'unknown': { startX: 100, startY: 1000, spacing: 350, rowSpacing: 220 }
+      'DavidV100': { startX: 100, startY: 100, spacing: 300, rowSpacing: 250 },    // NPU
+      'Hi1650V100': { startX: 100, startY: 400, spacing: 300, rowSpacing: 250 },   // CPU
+      'UnionsV100': { startX: 100, startY: 700, spacing: 300, rowSpacing: 220 },   // Switch
+      'unknown': { startX: 100, startY: 1000, spacing: 300, rowSpacing: 220 }
     };
     
     // 对于其他类型的设备，动态添加配置
@@ -300,7 +305,7 @@ function Flow() {
         typeConfig[type] = {
           startX: 100,
           startY: 1200 + (typesCount - 4) * 220, // 4是预设的类型数量
-          spacing: 350,
+          spacing: 300,
           rowSpacing: 220
         };
       }
@@ -309,17 +314,17 @@ function Flow() {
     // 创建一个新的节点列表，保持节点ID不变
     const updatedNodes: Node[] = [];
     
-    // 布局每种类型的设备
+    // 布局每种类型的设备 - 每行最多8个设备
     Object.entries(devicesByType).forEach(([type, typeNodes]) => {
       const config = typeConfig[type];
-      const maxNodesPerRow = 3;
+      const maxNodesPerRow = 8; // 修改为每行最多8个设备
       
       typeNodes.forEach((node, index) => {
         // 计算行和列
         const row = Math.floor(index / maxNodesPerRow);
         const col = index % maxNodesPerRow;
         
-        // 计算新位置
+        // 计算新位置，减小水平间距以适应更多设备
         const x = config.startX + col * config.spacing;
         const y = config.startY + row * config.rowSpacing;
         
@@ -677,10 +682,10 @@ function Flow() {
     
     // 设备类型区域定义
     const typeAreas: Record<string, { startX: number, startY: number, spacing: number }> = {
-      'switch': { startX: 100, startY: 100, spacing: 350 },
-      'router': { startX: 100, startY: 400, spacing: 350 },
-      'server': { startX: 100, startY: 700, spacing: 350 },
-      'unknown': { startX: 100, startY: 1000, spacing: 350 }
+      'DavidV100': { startX: 100, startY: 100, spacing: 300 },    // NPU
+      'Hi1650V100': { startX: 100, startY: 400, spacing: 300 },   // CPU
+      'UnionsV100': { startX: 100, startY: 700, spacing: 300 },   // Switch
+      'unknown': { startX: 100, startY: 1000, spacing: 300 }
     };
     
     // 确保设备类型有定义
@@ -688,7 +693,7 @@ function Flow() {
       typeAreas[deviceType] = { 
         startX: 100, 
         startY: 1200 + Object.keys(typeAreas).length * 250, 
-        spacing: 350 
+        spacing: 300 
       };
     }
     
@@ -709,7 +714,7 @@ function Flow() {
     });
     
     const area = typeAreas[deviceType];
-    const maxNodesPerRow = 3;
+    const maxNodesPerRow = 8; // 修改为每行8个设备
     
     // 对特定类型的设备计数
     const sameTypeNodes = nodes.filter(node => 
@@ -723,7 +728,7 @@ function Flow() {
     // 尝试放置在网格中
     let placed = false;
     let row = 0;
-    let maxAttemptsPerRow = 10; // 防止无限循环
+    let maxAttemptsPerRow = maxNodesPerRow; // 防止无限循环，与每行最大设备数一致
     
     while (!placed && row < 10) { // 最多尝试10行
       for (let col = 0; col < maxNodesPerRow; col++) {
@@ -771,21 +776,158 @@ function Flow() {
     setShowDeviceDialog(true);
   };
 
-  const handleAddDeviceFromTemplate = (template: DeviceTemplate) => {
-    const position = findNewNodePosition(template.id);
-    const newNode: Node = {
-      id: `${nodes.length + 1}`,
-      type: 'device',
-      data: createDeviceFromTemplate(template, `${template.name} ${nodes.length + 1}`),
-      position
-    };
-    addNode(newNode);
-    setShowDeviceDialog(false);
-
-    setTimeout(() => {
-      fitView({ padding: 0.2 });
-    }, 50);
+  // 添加按类型计数的函数，用于生成设备名称
+  const getDeviceNumberByType = (nodes: Node[], typePrefix: string): number => {
+    // 获取指定类型的所有设备
+    const sameTypeNodes = nodes.filter(node => {
+      // 检查设备名称是否以给定前缀开头
+      const namePattern = new RegExp(`^${typePrefix}-\\d+$`);
+      return namePattern.test(node.data.label);
+    });
+    
+    if (sameTypeNodes.length === 0) {
+      return 1; // 如果没有同类型设备，从1开始
+    }
+    
+    // 提取现有编号
+    const numbers = sameTypeNodes.map(node => {
+      const match = node.data.label.match(/-(\d+)$/);
+      return match ? parseInt(match[1]) : 0;
+    });
+    
+    // 找出最大编号
+    const maxNumber = Math.max(...numbers);
+    return maxNumber + 1; // 返回下一个可用编号
   };
+
+  // 更新所有设备的编号
+  const updateAllDeviceNumbers = () => {
+    // 保存历史状态
+    saveToHistory();
+    
+    // 按类型分组设备
+    const devicesByType: Record<string, Node[]> = {};
+    
+    // 先按类型分组
+    nodes.forEach(node => {
+      const type = node.data.type || 'unknown';
+      if (!devicesByType[type]) {
+        devicesByType[type] = [];
+      }
+      devicesByType[type].push(node);
+    });
+    
+    // 创建更新后的节点列表
+    const updatedNodes: Node[] = [];
+    
+    // 按类型重新编号
+    Object.entries(devicesByType).forEach(([type, typeNodes]) => {
+      // 获取类型对应的显示名称前缀
+      let typePrefix = type;
+      if (type === 'DavidV100') typePrefix = 'NPU';
+      else if (type === 'Hi1650V100') typePrefix = 'CPU';
+      else if (type === 'UnionsV100') typePrefix = 'Switch';
+      
+      // 按ID排序，以保持相对顺序
+      typeNodes.sort((a, b) => a.id.localeCompare(b.id));
+      
+      // 重新编号
+      typeNodes.forEach((node, index) => {
+        updatedNodes.push({
+          ...node,
+          data: {
+            ...node.data,
+            label: `${typePrefix}-${index + 1}`
+          }
+        });
+      });
+    });
+    
+    // 更新所有节点
+    if (updatedNodes.length > 0) {
+      setNodes(updatedNodes);
+    }
+  };
+
+  const handleAddDeviceFromTemplate = (template: DeviceTemplate) => {
+    // 保存历史记录，以便撤销
+    saveToHistory();
+    
+    // 获取要添加的设备数量
+    const countToAdd = Math.max(1, Math.min(20, deviceCount || 1));
+    console.log(`准备添加 ${countToAdd} 个 ${template.name} 设备`);
+    
+    // 创建新设备的数组
+    const newDevices: Node[] = [];
+    
+    // 获取类型对应的显示名称前缀
+    let typePrefix = template.id;
+    if (template.id === 'DavidV100') typePrefix = 'NPU';
+    else if (template.id === 'Hi1650V100') typePrefix = 'CPU';
+    else if (template.id === 'UnionsV100') typePrefix = 'Switch';
+    
+    // 生成设备
+    for (let i = 0; i < countToAdd; i++) {
+      const uniqueId = `device-${Date.now()}-${i}`;
+      const position = findNewNodePosition(template.id);
+      
+      // 获取下一个可用的设备编号
+      const deviceNumber = getDeviceNumberByType(nodes, typePrefix) + i;
+      
+      const newDevice: Node = {
+        id: uniqueId,
+        type: 'device',
+        data: createDeviceFromTemplate(template, `${typePrefix}-${deviceNumber}`),
+        position
+      };
+      
+      // 添加到新设备数组
+      newDevices.push(newDevice);
+      console.log(`创建设备: ${uniqueId}, 名称: ${typePrefix}-${deviceNumber}`);
+    }
+    
+    // 使用addNodes批量添加所有设备
+    if (newDevices.length > 0) {
+      console.log(`批量添加 ${newDevices.length} 个设备`);
+      
+      // 如果添加多个设备，设置布局标志
+      if (countToAdd > 1) {
+        setShouldLayoutAfterAdd(true);
+      }
+      
+      // 添加设备
+      addNodes(newDevices);
+      
+      // 设置布局触发器
+      setLayoutTrigger(prev => prev + 1);
+      
+      // 关闭对话框
+      setShowDeviceDialog(false);
+      
+      // 显示消息
+      setErrorMessage(`已添加 ${countToAdd} 个 ${template.name} 设备`);
+    }
+  };
+  
+  // 使用useEffect监听布局触发器的变化
+  useEffect(() => {
+    if (layoutTrigger > 0 && shouldLayoutAfterAdd) {
+      // 重置标志
+      setShouldLayoutAfterAdd(false);
+      
+      // 延迟执行布局，确保节点已渲染
+      setTimeout(() => {
+        console.log(`执行布局，当前设备总数: ${nodes.length}`);
+        handleAutoLayout();
+      }, 200);
+    } else if (layoutTrigger > 0) {
+      // 如果不需要布局但是添加了设备，只调整视图
+      setTimeout(() => {
+        console.log(`调整视图，当前设备总数: ${nodes.length}`);
+        fitView({ padding: 0.2 });
+      }, 200);
+    }
+  }, [layoutTrigger, shouldLayoutAfterAdd]);
 
   const handleSaveTemplate = () => {
     if (newTemplate.id && newTemplate.name) {
@@ -804,6 +946,11 @@ function Flow() {
       saveToHistory();
       deleteNode(selectedNode);
       setSelectedNode(null);
+      
+      // 延迟更新编号，确保删除操作完成
+      setTimeout(() => {
+        updateAllDeviceNumbers();
+      }, 100);
     }
   }, [selectedNode, deleteNode, saveToHistory]);
 
@@ -916,6 +1063,11 @@ function Flow() {
         const nodeIdsToDelete = new Set(selectedNodes.map(node => node.id));
         const remainingNodes = nodes.filter(node => !nodeIdsToDelete.has(node.id));
         setNodes(remainingNodes);
+        
+        // 延迟更新所有设备的编号
+        setTimeout(() => {
+          updateAllDeviceNumbers();
+        }, 100);
       }
 
       // 清除选中状态
@@ -1207,7 +1359,24 @@ function Flow() {
       {showDeviceDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className={`${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-black'} rounded-lg p-6 max-w-2xl w-full mx-4`}>
-            <h2 className="text-xl font-bold mb-4">选择设备类型</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">选择设备类型</h2>
+              <div className="flex items-center gap-2">
+                <label className="whitespace-nowrap text-sm font-medium">添加数量：</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={deviceCount}
+                  onChange={(e) => setDeviceCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                  className={`border p-2 rounded w-16 text-center ${
+                    isDarkMode 
+                      ? 'bg-gray-700 text-white border-gray-600' 
+                      : 'bg-white text-gray-900 border-gray-300'
+                  }`}
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {deviceTemplates.map((template) => (
                 <div
