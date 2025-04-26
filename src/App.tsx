@@ -293,7 +293,7 @@ function Flow() {
     // 基础配置
     const baseConfig = {
       spacing: 300,      // 水平间距
-      rowSpacing: 250,   // 垂直间距
+      rowSpacing: 500,   // 垂直间距 - 从250增加到500（两倍）
       startX: 100,       // 起始X坐标
       maxNodesPerRow: 8  // 每行最多设备数
     };
@@ -334,7 +334,7 @@ function Flow() {
       
       // 更新Y坐标，为下一种类型的设备准备位置
       // 添加额外的间距作为类型之间的分隔
-      currentY += rowsNeeded * baseConfig.rowSpacing + 150; // 类型之间增加150px额外空间
+      currentY += rowsNeeded * baseConfig.rowSpacing + 300; // 类型之间增加300px额外空间（原来是150px）
     });
     
     // 更新所有节点位置
@@ -682,7 +682,7 @@ function Flow() {
     // 基础配置，与自动布局保持一致
     const baseConfig = {
       spacing: 300,      // 水平间距
-      rowSpacing: 250,   // 垂直间距
+      rowSpacing: 500,   // 垂直间距 - 与自动布局保持一致
       startX: 100,       // 起始X坐标
       maxNodesPerRow: 8  // 每行最多设备数
     };
@@ -757,7 +757,7 @@ function Flow() {
         
         if (placeBelowIndex >= 0) {
           // 放在前一个类型的下方
-          minY = typesMaxY[placeBelowIndex].maxY + 150; // 添加150px的类型间距
+          minY = typesMaxY[placeBelowIndex].maxY + 300; // 添加300px的类型间距（从150px增加）
         } else {
           // 放在第一个位置
           minY = 100;
@@ -765,7 +765,7 @@ function Flow() {
       } else {
         // 如果是未知类型或应该放在最后，则放在所有设备的下方
         if (typesMaxY.length > 0) {
-          minY = typesMaxY[typesMaxY.length - 1].maxY + 150;
+          minY = typesMaxY[typesMaxY.length - 1].maxY + 300; // 添加300px的类型间距（从150px增加）
         }
       }
       
